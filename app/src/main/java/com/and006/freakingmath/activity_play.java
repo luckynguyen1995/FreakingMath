@@ -1,9 +1,11 @@
 package com.and006.freakingmath;
 
 import android.app.ProgressDialog;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -22,69 +24,109 @@ public class activity_play extends AppCompatActivity {
     int resultx,result,n1,n2,math,score=0;
     boolean flag;
     ProgressBar proBar;
-    int status=100;
+    int status = 1000;
+    int speedUp = 10;
     Handler progressBarHandler = new Handler();
-    Message msg = new Message();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play);
         setControls();
         createMath(score);
-        proBar.setProgress(100);
-        proBar.setMax(100);
+        proBar.setProgress(1000);
+        proBar.setMax(1000);
         setEvents();
 
 
     }
 
-    private void progressTime() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(status >0){
-                    status = updateStatus();
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    progressBarHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            proBar.setProgress(status);
-                        }
-                    });
-                }
-                if (status == 0){
-                    new Thread()
-                    {
-                        public void run()
-                        {
-                            msg.arg1=1;
-                            handler.sendMessage(msg);
-                        }
-                    }.start();
+    public class MyAsyncTask extends AsyncTask<Void, Integer, Void> {
 
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    status = 100;
+        @Override
+        protected Void doInBackground(Void... voids) {
+            do {
+                SystemClock.sleep(10);
+                publishProgress(status);
+                status -= speedUp;
+            } while (status > 0);
 
-                }
-            }
+            return null;
+        }
 
-        }).start();
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            super.onProgressUpdate(values);
+            int i = values[0];
+            proBar.setProgress(i);
 
+        }
+
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Toast.makeText(activity_play.this, "Hết giờ", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected void onCancelled() {
+
+            super.onCancelled();
+
+        }
     }
+//    Thread newThread(){
+//       return new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (status > 0) {
+//                    status = updateStatus();
+//                    try {
+//                        Thread.sleep(100);
+//
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    progressBarHandler.post(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            proBar.setProgress(status);
+//                        }
+//                    });
+//                }
+//                if (status == 0) {
+//
+//                    try {
+//                        new Thread() {
+//                            public void run() {
+//                                Message msg = new Message();
+//                                msg.arg1 = 1;
+//                                handler.sendMessage(msg);
+//                            }
+//                        }.start();
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    status = 100;
+//                }
+//            }
+//        });
+//
+//    }
+//
+
     Handler handler = new Handler(new Handler.Callback() {
 
         @Override
         public boolean handleMessage(Message msg) {
             if(msg.arg1==1)
             {
+                //Open Dialog ở đây
                 Toast.makeText(activity_play.this, "Hết giờ", Toast.LENGTH_SHORT).show();
             }
             return false;
@@ -102,16 +144,22 @@ public class activity_play extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
+
                 if(result==resultx){
-                    progressTime();status=100;
+                    //Đúng thì replace
                     score++;
                     txtScore.setText(score+"");
                     createMath(score);
-
+                    status = 1000;
+//                    Thread t=newThread();
+//                    t.start();
+                    new MyAsyncTask().execute();
                 }else{
+                    //Sai end Game
                     score--;
                     txtScore.setText(score+"");
                     createMath(score);
+
                 }
             }
         });
@@ -120,10 +168,11 @@ public class activity_play extends AppCompatActivity {
             public void onClick(View view) {
 
                 if(result!=resultx){
-                    progressTime();status=100;
                     score++;
                     txtScore.setText(score+"");
                     createMath(score);
+                    status = 1000;
+                    new MyAsyncTask().execute();
                 }else{
                     score--;
                     txtScore.setText(score+"");
@@ -156,11 +205,13 @@ public class activity_play extends AppCompatActivity {
             n2=new Random().nextInt(5)+1;
         }
         else if(score<=10){
+            speedUp++;
             n1=new Random().nextInt(10)+1;
             n2=new Random().nextInt(10)+1;
 
         }
         else if(score<=15){
+            speedUp++;
             n1=new Random().nextInt(10+score*5)+1;
             math=3;
             rdMath=new Random().nextInt(math)+1;
@@ -172,6 +223,7 @@ public class activity_play extends AppCompatActivity {
 
         }
         else if(score<=30){
+            speedUp++;
             n1=new Random().nextInt(100)+1;
 
             math=4;
@@ -205,8 +257,8 @@ public class activity_play extends AppCompatActivity {
                 txtResult.setText(n1+n2+rd+"");
             }
 
-            //txtTest.setText(resultx+"");
-           // txtTest2.setText(result+"   "+flag);
+            txtTest.setText(resultx + "");
+            txtTest2.setText(result + "   " + flag);
         }
         else if(rdMath==2){
             resultx=Math.abs(n1-n2);
@@ -232,9 +284,9 @@ public class activity_play extends AppCompatActivity {
                     txtResult.setText(result+"");
                 }
             }
-           // txtTest.setText(resultx+"");
+            txtTest.setText(resultx + "");
 
-            //txtTest2.setText(result+" "+flag);
+            txtTest2.setText(result + " " + flag);
 
         }else if(rdMath==3){
             resultx=n1*n2;
